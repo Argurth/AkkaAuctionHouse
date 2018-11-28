@@ -202,7 +202,7 @@ class AuctionHouseRoutesSpec
       val bidder = Bidder("testBidder")
       val bid = Bid("test", 200)
       val request =
-        Post(s"/auctions/${defaultAuction.item}/bidders/${bidder.name}")
+        Post(s"/auctions/${defaultAuction.item}/bidders/${bidder.name}/bids")
           .withEntity(
             ContentTypes.`application/json`,
             PlaceBidParams(bid.value).toJson.toString

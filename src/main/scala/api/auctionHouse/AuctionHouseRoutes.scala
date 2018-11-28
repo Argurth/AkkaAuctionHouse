@@ -114,8 +114,8 @@ trait AuctionHouseRoutes extends AuctionHouseMarshaller {
     }
 
   def bidRoute: Route =
-    pathPrefix("auctions" / Segment / "bidders" / Segment) { (item, bidder) =>
-      pathEndOrSingleSlash {
+    pathPrefix("auctions" / Segment / "bidders" / Segment / "bids") {
+      (item, bidder) => pathEndOrSingleSlash {
         // POST /auctions/:item/bidders/:bidder
         post {
           entity(as[PlaceBidParams]) { params =>
