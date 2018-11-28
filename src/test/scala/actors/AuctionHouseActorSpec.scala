@@ -1,5 +1,6 @@
 package actors
 
+import actors.AuctionActor.{FreeIncrement, IncrementPolicy}
 import actors.AuctionHouseActor._
 import actors.utils.TestForwardingActor
 import akka.actor.{ActorRef, ActorSystem, Props}
@@ -33,6 +34,7 @@ class AuctionHouseActorSpec
         override def createAuction(
           name: String,
           startingPrice: Int,
+          incrementPolicy: IncrementPolicy,
           startDate: DateTime,
           endDate: DateTime
         ): ActorRef =
@@ -45,6 +47,7 @@ class AuctionHouseActorSpec
       Auction(
         "test",
         100,
+        FreeIncrement,
         AuctionActor.Planned,
         DateTime.now.plus((1 day).toMillis),
         DateTime.now.plus((2 days).toMillis),
@@ -62,6 +65,7 @@ class AuctionHouseActorSpec
       auctionHouseActor ! CreateAuction(
         auction.item,
         auction.startingPrice,
+        auction.incrementPolicy,
         auction.startDate,
         auction.endDate
       )
@@ -120,7 +124,7 @@ class AuctionHouseActorSpec
       createAuction(auctionHouseActor, probe)(defaultAuction)
 
       auctionHouseActor ! UpdateAuction(
-        defaultAuction.item, Some(newPrice), None, None
+        defaultAuction.item, Some(newPrice), None, None, None
       )
       probe.expectMsg(AuctionActor.Update(Some(newPrice), None, None))
       probe.reply(AuctionUpdated(
@@ -172,6 +176,7 @@ class AuctionHouseActorSpec
       auctionHouseActor ! CreateAuction(
         defaultAuction.item,
         defaultAuction.startingPrice,
+        defaultAuction.incrementPolicy,
         defaultAuction.startDate,
         defaultAuction.endDate
       )
@@ -188,6 +193,7 @@ class AuctionHouseActorSpec
       auctionHouseActor ! CreateAuction(
         defaultAuction.item,
         negativeStartingPrice,
+        defaultAuction.incrementPolicy,
         defaultAuction.startDate,
         defaultAuction.endDate
       )
@@ -220,7 +226,7 @@ class AuctionHouseActorSpec
       val newPrice = 200
 
       auctionHouseActor ! UpdateAuction(
-        defaultAuction.item, Some(newPrice), None, None
+        defaultAuction.item, Some(newPrice), None, None, None
       )
       expectMsg(AuctionNotFound(defaultAuction.item))
     }

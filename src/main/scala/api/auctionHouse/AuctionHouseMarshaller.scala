@@ -16,12 +16,14 @@ trait AuctionHouseMarshaller extends DefaultJsonProtocol {
   case class CreateAuctionParams(
     item: String,
     startingPrice: Int,
+    incrementPolicy: IncrementPolicy,
     startDate: DateTime,
     endDate: DateTime
   )
 
   case class UpdateAuctionParams(
     startingPrice: Option[Int],
+    incrementPolicy: Option[IncrementPolicy],
     startDate: Option[DateTime],
     endDate: Option[DateTime]
   )
@@ -52,10 +54,35 @@ trait AuctionHouseMarshaller extends DefaultJsonProtocol {
     }
   }
 
+  implicit object IncrementPolicyFormat
+    extends RootJsonFormat[IncrementPolicy] {
+    def write(ic: IncrementPolicy): JsValue = {
+      val base = Map("key" -> JsString(ic.key))
+      ic match {
+        case FreeIncrement => JsObject(base)
+        case MinimalIncrement(min) =>
+          JsObject(base + ("min" -> JsNumber(min)))
+      }
+    }
+    def read(json: JsValue): IncrementPolicy = json match {
+      case JsObject(value) => (value.get("key"), value.get("min")) match {
+        case (Some(JsString("FreeIncrement")), _) => FreeIncrement
+        case (Some(JsString("MinimalIncrement")), Some(JsNumber(min))) =>
+          MinimalIncrement(min.toInt)
+        case (Some(JsString("MinimalIncrement")), _) =>
+          deserializationError("Minimal increment must have a min value")
+        case (None, _) =>
+          deserializationError("Increment policy must have a key")
+        case _ => deserializationError("Invalid increment policy")
+      }
+      case _ => deserializationError("Increment policy expected")
+    }
+  }
+
   implicit val createAuctionParamsFormat:
-    RootJsonFormat[CreateAuctionParams] = jsonFormat4(CreateAuctionParams)
+    RootJsonFormat[CreateAuctionParams] = jsonFormat5(CreateAuctionParams)
   implicit val updateAuctionParamsFormat:
-    RootJsonFormat[UpdateAuctionParams] = jsonFormat3(UpdateAuctionParams)
+    RootJsonFormat[UpdateAuctionParams] = jsonFormat4(UpdateAuctionParams)
   implicit val joinAuctionParamsFormat: RootJsonFormat[JoinAuctionParams] =
     jsonFormat1(JoinAuctionParams)
   implicit val placeBidParamsFormat: RootJsonFormat[PlaceBidParams] =
@@ -68,7 +95,7 @@ trait AuctionHouseMarshaller extends DefaultJsonProtocol {
   implicit val winningBidFormat: RootJsonFormat[WinningBid] =
     jsonFormat2(WinningBid)
   implicit val auctionFormat: RootJsonFormat[Auction] =
-    jsonFormat8(Auction)
+    jsonFormat9(Auction)
 
   implicit object ErrorResponseWriter
     extends RootJsonWriter[ErrorResponse] {

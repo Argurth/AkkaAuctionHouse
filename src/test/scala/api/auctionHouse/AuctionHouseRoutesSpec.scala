@@ -1,6 +1,7 @@
-package api
+package api.auctionHouse
 
-import actors.AuctionActor.{Bid, Bidder, Closed, Planned}
+import actors.AuctionActor._
+import actors.AuctionHouseActor
 import actors.AuctionHouseActor._
 import actors.utils.TestForwardingActor
 import akka.actor.ActorRef
@@ -10,6 +11,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.testkit.{TestKit, TestProbe}
 import akka.util.Timeout
 import api.auctionHouse.AuctionHouseResponses._
+import api.{RequestTimeout, RestRoutes}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, MustMatchers, WordSpecLike}
@@ -50,6 +52,7 @@ class AuctionHouseRoutesSpec
     Auction(
       "test",
       100,
+      FreeIncrement,
       Planned,
       DateTime.now.plus((1 day).toMillis),
       DateTime.now.plus((2 days).toMillis),
@@ -87,6 +90,7 @@ class AuctionHouseRoutesSpec
       val params = (
         defaultAuction.item,
         defaultAuction.startingPrice,
+        defaultAuction.incrementPolicy,
         defaultAuction.startDate,
         defaultAuction.endDate
       )
@@ -144,12 +148,13 @@ class AuctionHouseRoutesSpec
         Patch(s"/auctions/${defaultAuction.item}")
           .withEntity(
             ContentTypes.`application/json`,
-            UpdateAuctionParams(None, None, None).toJson.toString
+            UpdateAuctionParams(None, None, None, None).toJson.toString
           )
 
       val result = request ~> routes ~> runRoute
       probe.expectMsg(UpdateAuction(
         defaultAuction.item,
+        None,
         None,
         None,
         None
@@ -163,6 +168,7 @@ class AuctionHouseRoutesSpec
 
       checkExceptionsHandling(request, UpdateAuction(
         defaultAuction.item,
+        None,
         None,
         None,
         None
@@ -203,7 +209,9 @@ class AuctionHouseRoutesSpec
           )
 
       val result = request ~> routes ~> runRoute
-      probe.expectMsg(PlaceBid(defaultAuction.item, bidder.name, bid.value))
+      probe.expectMsg(
+        AuctionHouseActor.PlaceBid(defaultAuction.item, bidder.name, bid.value)
+      )
       probe.reply(BidPlaced(bid))
       check {
         status mustBe StatusCodes.Created
@@ -212,7 +220,8 @@ class AuctionHouseRoutesSpec
       }(result)
 
       checkExceptionsHandling(
-        request, PlaceBid(defaultAuction.item, bidder.name, bid.value)
+        request,
+        AuctionHouseActor.PlaceBid(defaultAuction.item, bidder.name, bid.value)
       )
     }
   }

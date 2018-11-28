@@ -1,9 +1,8 @@
-package api
+package api.auctionHouse
 
-import actors.AuctionActor._
+import actors.AuctionActor.{FreeIncrement, _}
 import actors.AuctionHouseActor.Auction
 import akka.http.scaladsl.model.DateTime
-import api.auctionHouse.AuctionHouseMarshaller
 import api.auctionHouse.AuctionHouseResponses._
 import org.scalatest.{MustMatchers, WordSpecLike}
 import spray.json._
@@ -19,6 +18,9 @@ class AuctionHouseMarshallerSpec extends AuctionHouseMarshaller
   with MustMatchers {
   val today: DateTime = DateTime.now
   val tomorrow: DateTime = DateTime.now.plus((1 day).toMillis)
+
+  def incrementToJson(incrementPolicy: IncrementPolicy): JsValue =
+    incrementPolicy.toJson
 
   "The AuctionHouseMarshaller" must {
     def checkFormat[T](objectToTest: T, jsValue: JsValue)
@@ -42,12 +44,27 @@ class AuctionHouseMarshallerSpec extends AuctionHouseMarshaller
       checkFormat[AuctionState](Closed, JsString(Closed.key))
     }
 
+    "successfully convert an IncrementPolicy to/from json" in {
+      checkFormat[IncrementPolicy](
+        FreeIncrement,
+        JsObject("key" -> JsString("FreeIncrement"))
+      )
+      checkFormat[IncrementPolicy](
+        MinimalIncrement(100),
+        JsObject(
+          "key" -> JsString("MinimalIncrement"),
+          "min" -> JsNumber(100)
+        )
+      )
+    }
+
     "successfully convert a CreateAuctionParams to/from json" in {
       checkFormat(
-        CreateAuctionParams("test", 100, today, tomorrow),
+        CreateAuctionParams("test", 100, FreeIncrement, today, tomorrow),
         JsObject(
           "item" -> JsString("test"),
           "startingPrice" -> JsNumber(100),
+          "incrementPolicy" -> incrementToJson(FreeIncrement),
           "startDate" -> today.toJson,
           "endDate" -> tomorrow.toJson
         )
@@ -56,25 +73,37 @@ class AuctionHouseMarshallerSpec extends AuctionHouseMarshaller
 
     "successfully convert an UpdateAuctionParams to/from json" in {
       checkFormat(
-        UpdateAuctionParams(Some(100), Some(today), Some(tomorrow)),
+        UpdateAuctionParams(
+          Some(100), Some(FreeIncrement), Some(today), Some(tomorrow)
+        ),
         JsObject(
           "startingPrice" -> JsNumber(100),
+          "incrementPolicy" -> incrementToJson(FreeIncrement),
           "startDate" -> today.toJson,
           "endDate" -> tomorrow.toJson
         )
       )
 
       checkFormat(
-        UpdateAuctionParams(None, Some(today), Some(tomorrow)),
+        UpdateAuctionParams(None, Some(FreeIncrement), Some(today), Some(tomorrow)),
+        JsObject(
+          "incrementPolicy" -> incrementToJson(FreeIncrement),
+          "startDate" -> today.toJson,
+          "endDate" -> tomorrow.toJson
+        )
+      )
+
+      checkFormat(
+        UpdateAuctionParams(None, None, Some(today), Some(tomorrow)),
         JsObject("startDate" -> today.toJson, "endDate" -> tomorrow.toJson)
       )
 
       checkFormat(
-        UpdateAuctionParams(None, None, Some(tomorrow)),
+        UpdateAuctionParams(None, None, None, Some(tomorrow)),
         JsObject("endDate" -> tomorrow.toJson)
       )
 
-      checkFormat(UpdateAuctionParams(None, None, None), JsObject())
+      checkFormat(UpdateAuctionParams(None, None, None, None), JsObject())
     }
 
     "successfully convert a JoinAuctionParams to/from json" in {
@@ -92,13 +121,19 @@ class AuctionHouseMarshallerSpec extends AuctionHouseMarshaller
     }
 
     "successfully convert a Bidder to/from json" in {
-      checkFormat(Bidder("testBidder"), JsObject("name" -> JsString("test")))
+      checkFormat(
+        Bidder("testBidder"),
+        JsObject("name" -> JsString("testBidder"))
+      )
     }
 
     "successfully convert a Bid to/from json" in {
       checkFormat(
-        Bid("test", 100),
-        JsObject("bidderName" -> JsString("test"), "bid" -> JsNumber(100))
+        Bid("testBidder", 100),
+        JsObject(
+          "bidderName" -> JsString("testBidder"),
+          "value" -> JsNumber(100)
+        )
       )
     }
 
@@ -118,6 +153,7 @@ class AuctionHouseMarshallerSpec extends AuctionHouseMarshaller
         Auction(
           "test",
           100,
+          FreeIncrement,
           state,
           today,
           tomorrow,
@@ -128,6 +164,7 @@ class AuctionHouseMarshallerSpec extends AuctionHouseMarshaller
         JsObject(
           "item" -> JsString("test"),
           "startingPrice" -> JsNumber(100),
+          "incrementPolicy" -> incrementToJson(FreeIncrement),
           "auctionState" -> state.toJson,
           "startDate" -> today.toJson,
           "endDate" -> tomorrow.toJson,
@@ -143,6 +180,7 @@ class AuctionHouseMarshallerSpec extends AuctionHouseMarshaller
         Auction(
           "test",
           100,
+          MinimalIncrement(10),
           state,
           today,
           tomorrow,
@@ -153,6 +191,7 @@ class AuctionHouseMarshallerSpec extends AuctionHouseMarshaller
         JsObject(
           "item" -> JsString("test"),
           "startingPrice" -> JsNumber(100),
+          "incrementPolicy" -> incrementToJson(MinimalIncrement(10)),
           "auctionState" -> state.toJson,
           "startDate" -> today.toJson,
           "endDate" -> tomorrow.toJson,

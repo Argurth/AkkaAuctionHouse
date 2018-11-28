@@ -44,6 +44,7 @@ trait AuctionHouseRoutes extends AuctionHouseMarshaller {
               auctionHouse.ask(CreateAuction(
                 params.item,
                 params.startingPrice,
+                params.incrementPolicy,
                 params.startDate,
                 params.endDate
               )).mapTo[Response]
@@ -80,6 +81,7 @@ trait AuctionHouseRoutes extends AuctionHouseMarshaller {
                 auctionHouse.ask(UpdateAuction(
                   item,
                   params.startingPrice,
+                  params.incrementPolicy,
                   params.startDate,
                   params.endDate
                 )).mapTo[Response]

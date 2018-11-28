@@ -1,5 +1,6 @@
 package actors
 
+import actors.AuctionActor.IncrementPolicy
 import akka.actor.{Actor, Props}
 import akka.http.scaladsl.model.DateTime
 import api.auctionHouse.AuctionHouseResponses._
@@ -15,9 +16,12 @@ object AuctionActor {
   def props(
     item: String,
     startingPrice: Int,
+    incrementPolicy: IncrementPolicy,
     startDate: DateTime,
     endDate: DateTime
-  ) = Props(new AuctionActor(item, startingPrice, startDate, endDate))
+  ) = Props(
+    new AuctionActor(item, startingPrice, incrementPolicy, startDate, endDate)
+  )
 
   case class Bidder(name: String)
 
@@ -25,7 +29,7 @@ object AuctionActor {
 
   case class WinningBid(bidder: Bidder, bid: Bid)
 
-  sealed class AuctionState(val key: String)
+  sealed abstract class AuctionState(val key: String)
 
   case object Planned extends AuctionState("Planned")
 
@@ -36,6 +40,11 @@ object AuctionActor {
   val availableAuctionStates: Vector[AuctionState] =
     Vector(Planned, Opened, Closed)
 
+  sealed abstract class IncrementPolicy(val key: String)
+  case object FreeIncrement extends IncrementPolicy("FreeIncrement")
+  case class MinimalIncrement(min: Int)
+    extends IncrementPolicy("MinimalIncrement")
+
   /** Events **/
   case object Get
 
@@ -43,6 +52,7 @@ object AuctionActor {
 
   case class Update(
     startingPrice: Option[Int] = None,
+    incrementPolicy: Option[IncrementPolicy] = None,
     startDate: Option[DateTime] = None,
     endDate: Option[DateTime] = None
   )
@@ -56,6 +66,7 @@ object AuctionActor {
 class AuctionActor(
   item: String,
   var startingPrice: Int,
+  var incrementPolicy: IncrementPolicy,
   var startDate: DateTime,
   var endDate: DateTime
 ) extends Actor {
@@ -79,6 +90,7 @@ class AuctionActor(
     AuctionHouseActor.Auction(
       item,
       startingPrice,
+      incrementPolicy,
       auctionState,
       startDate,
       endDate,
@@ -119,10 +131,11 @@ class AuctionActor(
 
     case UpdateState => updateAuctionState()
 
-    case Update(newStartingPrice, newStartDate, newEndDate) =>
+    case Update(newStartingPrice, newIncrementPolicy, newStartDate, newEndDate) =>
       auctionState match {
         case Planned =>
           newStartingPrice.foreach(startingPrice = _)
+          newIncrementPolicy.foreach(incrementPolicy = _)
           newStartDate.foreach(startDate = _)
           newEndDate.foreach(endDate = _)
           updateAuctionState()
@@ -156,10 +169,12 @@ class AuctionActor(
         case Opened =>
           if (!bidders.contains(bidder))
             sender() ! BidderDidNotJoin(bidder.name)
-          else bids match {
-            case List() if bid >= startingPrice => sender() ! addBid()
-            case highestBid :: _ if bid > highestBid.value =>
+          else (incrementPolicy, bids) match {
+            case (FreeIncrement, highestBid :: _) if bid > highestBid.value =>
               sender() ! addBid()
+            case (MinimalIncrement(min), highestBid :: _)
+              if bid >= highestBid.value + min => sender() ! addBid()
+            case (_, List()) if bid >= startingPrice => sender() ! addBid()
             case _ => sender() ! BidTooLow(bid)
           }
         case _ => sender() ! NotPermittedByState(auctionState)

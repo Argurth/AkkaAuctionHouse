@@ -28,7 +28,13 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
 
   def createAuctionActor(a: Auction): ActorRef =
     system.actorOf(
-      AuctionActor.props(a.item, a.startingPrice, a.startDate, a.endDate)
+      AuctionActor.props(
+        a.item,
+        a.startingPrice,
+        a.incrementPolicy,
+        a.startDate,
+        a.endDate
+      )
     )
 
   "A planned auction" must {
@@ -36,6 +42,7 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
       Auction(
         "test",
         100,
+        FreeIncrement,
         Planned,
         DateTime.now.plus((1 day).toMillis),
         DateTime.now.plus((2 days).toMillis),
@@ -56,6 +63,7 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
         createAuctionActor(defaultAuction)
 
       val newPrice = 200
+      val newIncrementPolicy = MinimalIncrement(100)
       val newStart = DateTime.now.plus((3 days).toMillis)
       val newEnd = DateTime.now.plus((5 days).toMillis)
 
@@ -76,24 +84,37 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
         event = Update(startingPrice = Some(newPrice)),
         result = defaultAuction.copy(startingPrice = newPrice)
       )
+      // Update only increment policy
+      checkUpdated(
+        event = Update(incrementPolicy = Some(newIncrementPolicy)),
+        result = defaultAuction.copy(
+          startingPrice = newPrice, incrementPolicy = newIncrementPolicy
+        )
+      )
       // Update only start date
       checkUpdated(
         event = Update(startDate = Some(newStart)),
         result = defaultAuction.copy(
-          startingPrice = newPrice, startDate = newStart
+          startingPrice = newPrice,
+          incrementPolicy = newIncrementPolicy,
+          startDate = newStart
         )
       )
       // Update only end date
       checkUpdated(
         event = Update(endDate = Some(newEnd)),
         result = defaultAuction.copy(
-          startingPrice = newPrice, startDate = newStart, endDate = newEnd
+          startingPrice = newPrice,
+          incrementPolicy = newIncrementPolicy,
+          startDate = newStart,
+          endDate = newEnd
         )
       )
       // Update all
       checkUpdated(
         event = Update(
           startingPrice = Some(defaultAuction.startingPrice),
+          incrementPolicy = Some(defaultAuction.incrementPolicy),
           startDate = Some(defaultAuction.startDate),
           endDate = Some(defaultAuction.endDate)
         ),
@@ -146,6 +167,7 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
       Auction(
         "test",
         100,
+        FreeIncrement,
         Opened,
         DateTime.now.minus((1 day).toMillis),
         DateTime.now.plus((1 day).toMillis),
@@ -171,8 +193,8 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
       expectMsg(AuctionFound(defaultAuction.copy(bidders = Set(testBidder))))
     }
 
-    "place a bid for a user when it receive a place bid event when the " +
-      "bid is greater than the previous one" in {
+    "place a bid for a user when it receive a place bid event when the bid " +
+      "is greater than the previous one with a free increment policy" in {
       val auctionActor: ActorRef = createAuctionActor(defaultAuction)
       val testBidder = Bidder("testBidder")
       val testBidder2 = Bidder("testBidder2")
@@ -203,21 +225,85 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
       checkBidPlaced(testBid3, Vector(testBid3, testBid2, testBid))
     }
 
-    "place a bid for a user when it receive a place bid event when the " +
-      "first bid is equal to the starting price" in {
-      val auctionActor: ActorRef = createAuctionActor(defaultAuction)
+    "place a bid for a user when it receive a place bid event when the bid " +
+      "is greater than or equal to the previous one plus a minimum with a " +
+      "minimal increment policy" in {
+      val minIncrement = 100
+      val auctionActor: ActorRef = createAuctionActor(
+        defaultAuction.copy(incrementPolicy = MinimalIncrement(minIncrement))
+      )
       val testBidder = Bidder("testBidder")
-      val testBid = Bid(testBidder.name, defaultAuction.startingPrice)
+      val testBidder2 = Bidder("testBidder2")
+      val testBid = Bid(
+        testBidder.name, defaultAuction.startingPrice + minIncrement
+      )
+      val testBid2 = Bid(testBidder.name, testBid.value + minIncrement * 2)
+      val testBid3 = Bid(testBidder2.name, testBid2.value + minIncrement * 2)
+      val testBid4 = Bid(testBidder.name, testBid3.value + minIncrement)
+      val testBid5 = Bid(testBidder2.name, testBid4.value + minIncrement)
 
       auctionActor ! Join(testBidder.name)
       expectMsg(AuctionJoined(testBidder))
+      auctionActor ! Join(testBidder2.name)
+      expectMsg(AuctionJoined(testBidder2))
 
-      auctionActor ! PlaceBid(testBid.bidderName, testBid.value)
+      def checkBidPlaced(bid: Bid, expectBidsState: Vector[Bid]) = {
+        auctionActor ! PlaceBid(bid.bidderName, bid.value)
+        expectMsg(BidPlaced(bid))
+        auctionActor ! Get
+        expectMsg(AuctionFound(defaultAuction.copy(
+          bidders = Set(testBidder, testBidder2),
+          bids = expectBidsState,
+          incrementPolicy = MinimalIncrement(minIncrement)
+        )))
+      }
+
+      // Greater than starting price + minimal increment
+      checkBidPlaced(testBid, Vector(testBid))
+      // Greater than previous price + minimal increment, same user
+      checkBidPlaced(testBid2, Vector(testBid2, testBid))
+      // Greater than previous price + minimal increment, another user
+      checkBidPlaced(testBid3, Vector(testBid3, testBid2, testBid))
+      // Equal to previous price + minimal increment, same user
+      checkBidPlaced(testBid4, Vector(testBid4, testBid3, testBid2, testBid))
+      // Equal to previous price + minimal increment, another user
+      checkBidPlaced(
+        testBid5,
+        Vector(testBid5, testBid4, testBid3, testBid2, testBid)
+      )
+    }
+
+    "always place a bid for a user when it receive a place bid event when " +
+      "the first bid is equal to the starting price " +
+      "whatever the increment policy is" in {
+      val minIncrement = 100
+      val freeAuctionActor: ActorRef = createAuctionActor(defaultAuction)
+      val minimalAuctionActor: ActorRef = createAuctionActor(
+        defaultAuction.copy(incrementPolicy = MinimalIncrement(minIncrement))
+      )
+      val testBidder = Bidder("testBidder")
+      val testBid = Bid(testBidder.name, defaultAuction.startingPrice)
+
+      freeAuctionActor ! Join(testBidder.name)
+      expectMsg(AuctionJoined(testBidder))
+      minimalAuctionActor ! Join(testBidder.name)
+      expectMsg(AuctionJoined(testBidder))
+
+      freeAuctionActor ! PlaceBid(testBid.bidderName, testBid.value)
       expectMsg(BidPlaced(testBid))
-      auctionActor ! Get
+      freeAuctionActor ! Get
       expectMsg(AuctionFound(defaultAuction.copy(
         bidders = Set(testBidder),
         bids = Vector(testBid)
+      )))
+
+      minimalAuctionActor ! PlaceBid(testBid.bidderName, testBid.value)
+      expectMsg(BidPlaced(testBid))
+      minimalAuctionActor ! Get
+      expectMsg(AuctionFound(defaultAuction.copy(
+        bidders = Set(testBidder),
+        bids = Vector(testBid),
+        incrementPolicy = MinimalIncrement(minIncrement)
       )))
     }
 
@@ -307,7 +393,8 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
     }
 
     "send back a BidTooLow if no bid had been made when it receive a " +
-      "place bid event with a bid smaller than the starting price" in {
+      "place bid event with a bid smaller than the starting price " +
+      "whatever the increment policy is" in {
       val auctionActor: ActorRef = createAuctionActor(defaultAuction)
       val testBidder = Bidder("testBidder")
       val testBid = Bid(testBidder.name, 0)
@@ -323,8 +410,9 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
       expectMsg(AuctionFound(defaultAuction.copy(bidders = Set(testBidder))))
     }
 
-    "send back a BidTooLow if a bid had been made when it receive " +
-      "a place bid event with a bid not greater than the highest bid" in {
+    "send back a BidTooLow if a bid had been made when it receive a place " +
+      "bid event with a bid not greater than the highest bid " +
+      "whatever the increment policy is" in {
       val auctionActor: ActorRef = createAuctionActor(defaultAuction)
       val testBidder = Bidder("testBidder")
       val testBidder2 = Bidder("testBidder2")
@@ -339,8 +427,7 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
 
       auctionActor ! Get
       expectMsg(AuctionFound(defaultAuction.copy(
-        bidders = Set(testBidder, testBidder2),
-        bids = Vector(testBid)
+        bidders = Set(testBidder, testBidder2), bids = Vector(testBid)
       )))
 
       def expectBidTooLow(bid: Bid) = {
@@ -362,6 +449,54 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
       // Another user, smaller
       expectBidTooLow(Bid(testBidder2.name, 0))
     }
+
+    "send back a BidTooLow if a bid had been made when it receive a place " +
+      "bid event with a bid smaller than the highest bid plus a minimum " +
+      "when the increment policy is a minimal increment policy" in {
+      val minIncrement = 100
+      val auctionActor: ActorRef = createAuctionActor(
+        defaultAuction.copy(incrementPolicy = MinimalIncrement(minIncrement))
+      )
+      val testBidder = Bidder("testBidder")
+      val testBidder2 = Bidder("testBidder2")
+      val testBid = Bid(testBidder.name, defaultAuction.startingPrice)
+
+      auctionActor ! Join(testBidder.name)
+      expectMsg(AuctionJoined(testBidder))
+      auctionActor ! Join(testBidder2.name)
+      expectMsg(AuctionJoined(testBidder2))
+      auctionActor ! PlaceBid(testBid.bidderName, testBid.value)
+      expectMsg(BidPlaced(testBid))
+
+      auctionActor ! Get
+      expectMsg(AuctionFound(defaultAuction.copy(
+        bidders = Set(testBidder, testBidder2),
+        bids = Vector(testBid),
+        incrementPolicy = MinimalIncrement(minIncrement)
+      )))
+
+      def expectBidTooLow(bid: Bid) = {
+        auctionActor ! PlaceBid(bid.bidderName, bid.value)
+        expectMsg(BidTooLow(bid.value))
+        auctionActor ! Get
+        expectMsg(AuctionFound(defaultAuction.copy(
+          bidders = Set(testBidder, testBidder2),
+          bids = Vector(testBid),
+          incrementPolicy = MinimalIncrement(minIncrement)
+        )))
+      }
+
+      // Same user, smaller than  highest bid + minimal increment
+      expectBidTooLow(Bid(
+        testBidder.name,
+        defaultAuction.startingPrice + minIncrement - 1
+      ))
+      // Another user, smaller than  highest bid + minimal increment
+      expectBidTooLow(Bid(
+        testBidder2.name,
+        defaultAuction.startingPrice + minIncrement - 1
+      ))
+    }
   }
 
   "A closed auction" must {
@@ -369,6 +504,7 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
       Auction(
         "test",
         100,
+        FreeIncrement,
         Closed,
         DateTime.now.minus((2 days).toMillis),
         DateTime.now.minus((1 day).toMillis),
