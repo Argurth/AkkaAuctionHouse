@@ -139,6 +139,19 @@ class AuctionActorSpec extends TestKit(ActorSystem("testAuctionActor"))
       }, 2 seconds, 500 millis)
     }
 
+    "send back an NegativeStartingPrice message when it receive an " +
+      "Update message with a negative starting price" in {
+      val auctionActor: ActorRef = createAuctionActor(defaultAuction)
+      val negativeStartingPrice = -1
+
+      auctionActor ! Get
+      expectMsg(AuctionFound(defaultAuction))
+      auctionActor ! Update(startingPrice = Some(negativeStartingPrice))
+      expectMsg(NegativeStartingPrice(negativeStartingPrice))
+      auctionActor ! Get
+      expectMsg(AuctionFound(defaultAuction))
+    }
+
     "send back a NotPermittedByState when an user try to join" in {
       val auctionActor: ActorRef = createAuctionActor(defaultAuction)
 

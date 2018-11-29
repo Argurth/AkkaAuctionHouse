@@ -131,15 +131,24 @@ class AuctionActor(
 
     case UpdateState => updateAuctionState()
 
-    case Update(newStartingPrice, newIncrementPolicy, newStartDate, newEndDate) =>
+    case Update(
+      newStartingPrice,
+      newIncrementPolicy,
+      newStartDate,
+      newEndDate
+    ) =>
       auctionState match {
-        case Planned =>
-          newStartingPrice.foreach(startingPrice = _)
-          newIncrementPolicy.foreach(incrementPolicy = _)
-          newStartDate.foreach(startDate = _)
-          newEndDate.foreach(endDate = _)
-          updateAuctionState()
-          sender() ! AuctionUpdated(auction)
+        case Planned => newStartingPrice match {
+          case Some(newSP) if newSP < 0 =>
+            sender() ! NegativeStartingPrice(newSP)
+          case _ =>
+            newStartingPrice.foreach(startingPrice = _)
+            newIncrementPolicy.foreach(incrementPolicy = _)
+            newStartDate.foreach(startDate = _)
+            newEndDate.foreach(endDate = _)
+            updateAuctionState()
+            sender() ! AuctionUpdated(auction)
+        }
         case _ => sender() ! NotPermittedByState(auctionState)
       }
 
