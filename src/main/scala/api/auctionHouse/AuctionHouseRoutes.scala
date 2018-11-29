@@ -121,7 +121,7 @@ trait AuctionHouseRoutes extends AuctionHouseMarshaller {
           entity(as[PlaceBidParams]) { params =>
             onSuccess(
               auctionHouse
-                .ask(PlaceBid(item, bidder, params.bid))
+                .ask(PlaceBid(item, bidder, params.value))
                 .mapTo[Response]
             ) {
               case s: BidPlaced => complete(s.statusCode, s.bid)

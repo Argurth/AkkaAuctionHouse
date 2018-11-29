@@ -30,7 +30,7 @@ trait AuctionHouseMarshaller extends DefaultJsonProtocol {
 
   case class JoinAuctionParams(bidderName: String)
 
-  case class PlaceBidParams(bid: Int)
+  case class PlaceBidParams(value: Int)
 
   implicit object DateTimeFormat extends RootJsonFormat[DateTime] {
     def write(d: DateTime) = JsNumber(d.clicks)

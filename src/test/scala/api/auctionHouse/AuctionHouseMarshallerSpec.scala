@@ -116,7 +116,7 @@ class AuctionHouseMarshallerSpec extends AuctionHouseMarshaller
     "successfully convert a PlaceBidParams to/from json" in {
       checkFormat(
         PlaceBidParams(100),
-        JsObject("bid" -> JsNumber(100))
+        JsObject("value" -> JsNumber(100))
       )
     }
 
