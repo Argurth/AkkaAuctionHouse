@@ -1,0 +1,240 @@
+{
+	"_type": "export",
+	"__export_format": 3,
+	"__export_date": "2018-11-29T12:20:06.023Z",
+	"__export_source": "insomnia.desktop.app:v5.7.12",
+	"resources": [
+		{
+			"_id": "wrk_f7ef539326c044fd9c7e4cde3503f492",
+			"parentId": null,
+			"modified": 1543239313710,
+			"created": 1543239313710,
+			"name": "SpideoExam",
+			"description": "",
+			"certificates": [],
+			"_type": "workspace"
+		},
+		{
+			"_id": "env_eaac9e42febd4d47bf8aa9d688791b77",
+			"parentId": "wrk_f7ef539326c044fd9c7e4cde3503f492",
+			"modified": 1543239345149,
+			"created": 1543239345149,
+			"name": "Base Environment",
+			"data": {},
+			"color": null,
+			"isPrivate": false,
+			"_type": "environment"
+		},
+		{
+			"_id": "jar_86ec7d092cd24ad69900f8f4f6ba7e59",
+			"parentId": "wrk_f7ef539326c044fd9c7e4cde3503f492",
+			"modified": 1543239533670,
+			"created": 1543239533670,
+			"name": "Default Jar",
+			"cookies": [],
+			"_type": "cookie_jar"
+		},
+		{
+			"_id": "fld_dfba1a9be1334754838926992370dfd5",
+			"parentId": "wrk_f7ef539326c044fd9c7e4cde3503f492",
+			"modified": 1543239896467,
+			"created": 1543239331684,
+			"name": "Auctions",
+			"description": "",
+			"environment": {},
+			"metaSortKey": -1543239331834,
+			"_type": "request_group"
+		},
+		{
+			"_id": "env_3898c5a134ef4a11a06347f3005941c4",
+			"parentId": "env_eaac9e42febd4d47bf8aa9d688791b77",
+			"modified": 1543239953897,
+			"created": 1543239572259,
+			"name": "Development",
+			"data": {
+				"baseUrl": "http://localhost:5000"
+			},
+			"color": null,
+			"isPrivate": false,
+			"_type": "environment"
+		},
+		{
+			"_id": "fld_cece69334fa54b589aa43bdd3de7d293",
+			"parentId": "fld_dfba1a9be1334754838926992370dfd5",
+			"modified": 1543493760721,
+			"created": 1543239764502,
+			"name": "Bidders",
+			"description": "",
+			"environment": {},
+			"metaSortKey": -1543239344986,
+			"_type": "request_group"
+		},
+		{
+			"_id": "req_f4aa5235b01f4467b0df6ba9778505be",
+			"parentId": "fld_dfba1a9be1334754838926992370dfd5",
+			"modified": 1543493977584,
+			"created": 1543239345086,
+			"url": "{{ baseUrl  }}/auctions",
+			"name": "Create an auction",
+			"description": "## Description\n\nThis endpoint allow you to create a new auction.\n\n## Authentication\n\nNo authentication required\n\n## Path\n\nPOST /auctions\n\n## Headers\n\n```\nContent-type: application/json\n```\n\n## Url parameters\n\nThis endpoint does not accept url parameters.\n\n## Request body\n\nThis endpoint must have a well-formatted json body:\n```\n{\n\t\"item\": \"test\",\n\t\"incrementPolicy\": {\n\t\t\"key\": \"MinimalIncrement\",\n\t\t\"min\": 10\n\t},\n\t\"startingPrice\": 200,\n\t\"startDate\": 1553239485000,\n\t\"endDate\": 1563239485000\n}\n```\n\n- item must be present and must be a string\n- incrementPolicy must be present\n    - key must be present and correspond to an existing increment policy key (\"FreeIncrement\", \"MinimalIncrement\")\n    - min must be present only if the increment policy key is \"MinimalIncrement\"\n- startingPrice must be present and must be a positive integer representing the starting price in cents\n- startDate must be present and must be a unix timestamp expressed in milliseconds\n- endDate must be present and must be a unix timestamp expressed in milliseconds\n\n## Success response\n\nIn order for the request to be successful, the item must not have been already created by another request.\n\nIn which case the server will answer:\n\n- Code: 201 CREATED\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content: \n    ```\n    {\n    \t\"auctionState\": \"Planned\",\n    \t\"endDate\": 1563239485000,\n    \t\"bids\": [],\n    \t\"startingPrice\": 200,\n    \t\"incrementPolicy\": {\n    \t\t\"key\": \"MinimalIncrement\",\n    \t\t\"min\": 10\n    \t},\n    \t\"startDate\": 1553239485000,\n    \t\"bidders\": [],\n    \t\"item\": \"test\"\n    }\n    ```\n    \n## Error responses\n\nIf the request is unsuccessful, the server may responds with the following errors:\n\n- Code: 400 BAD REQUEST\n- Headers:\n    ```\n    Content-type: text/plain; charset=UTF-8\n    ```\n- Content:\n    ```\n    The request content was malformed: [A descriptive message]\n    ```\n- When:\n    - The request was malformed\n    \nOR\n\n- Code: 422 UNPROCESSABLE ENTITY\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"The provided starting price '-200' is negative\"\n    }\n    ```\n- When:\n    - The startingPrice parameter was negative\n    \nOR\n\n- Code: 422 UNPROCESSABLE ENTITY\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"The auction 'test' already exist\"\n    }\n    ```\n- When:\n    - The item parameter had already been created by another request ",
+			"method": "POST",
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n\t\"item\": \"test\",\n\t\"incrementPolicy\": {\n\t\t\"key\": \"MinimalIncrement\",\n\t\t\"min\": 10\n\t},\n\t\"startingPrice\": 200,\n\t\"startDate\": 1553239485000,\n\t\"endDate\": 1563239485000\n}"
+			},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Content-Type",
+					"value": "application/json",
+					"id": "pair_4ef65711a3f5439d86af3518ad5d770a"
+				}
+			],
+			"authentication": {},
+			"metaSortKey": -1543239345086,
+			"settingStoreCookies": true,
+			"settingSendCookies": true,
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"_type": "request"
+		},
+		{
+			"_id": "req_226f5d0174de4db4a9d1f58acb775a26",
+			"parentId": "fld_dfba1a9be1334754838926992370dfd5",
+			"modified": 1543493959309,
+			"created": 1543239559491,
+			"url": "{{ baseUrl  }}/auctions/test",
+			"name": "Get an auction",
+			"description": "## Description\n\nThis endpoint allow you to get an existing auction.\n\n## Authentication\n\nNo authentication required\n\n## Path\n\nGET /auctions/:item\n\n## Headers\n\nThis endpoint does not need any particular header\n\n## Url parameters\n\nThis endpoint does not accept url parameters.\n\n## Request body\n\nThis endpoint does not accept a body\n\n## Success response\n\nIn order for the request to be successful, the :item field in the url must correspond to an already created option.\n\nIn which case the server will answer:\n\n- Code: 200 OK\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content: \n    ```\n    {\n    \t\"auctionState\": \"Opened\",\n    \t\"endDate\": 1553239508000,\n    \t\"bids\": [],\n    \t\"startingPrice\": 300,\n    \t\"incrementPolicy\": {\n    \t\t\"key\": \"FreeIncrement\"\n    \t},\n    \t\"startDate\": 1543239508000,\n    \t\"bidders\": [],\n    \t\"item\": \"test\"\n    }\n    ```\n    \n## Error responses\n\nIf the request is unsuccessful, the server may responds with the following errors:\n\n- Code: 404 NOT FOUND\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"The auction 'test2' doesn't exist\"\n    }\n    ```\n- When:\n    - The item parameter in route does not match an existing auction",
+			"method": "GET",
+			"body": {},
+			"parameters": [],
+			"headers": [],
+			"authentication": {},
+			"metaSortKey": -1543239345061,
+			"settingStoreCookies": true,
+			"settingSendCookies": true,
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"_type": "request"
+		},
+		{
+			"_id": "req_c00b8144f77a431f8619253db7f85843",
+			"parentId": "fld_dfba1a9be1334754838926992370dfd5",
+			"modified": 1543493953871,
+			"created": 1543239664708,
+			"url": "{{ baseUrl  }}/auctions/test",
+			"name": "Update an auction",
+			"description": "## Description\n\nThis endpoint allow you to update an existing auction.\n\n## Authentication\n\nNo authentication required\n\n## Path\n\nPATCH /auctions/:item\n\n## Headers\n\n```\nContent-type: application/json\n```\n\n## Url parameters\n\nThis endpoint does not accept url parameters.\n\n## Request body\n\nThis endpoint must have a well-formatted json body:\n```\n{\n\t\"startingPrice\": 300,\n\t\"incrementPolicy\": {\n\t\t\"key\": \"FreeIncrement\"\n\t},\n\t\"startDate\": 1543239508000,\n\t\"endDate\": 1553239508000\n}\n```\n\n- item is optional, but must be a string if present\n- incrementPolicy is optional, but if present, must be well-formed:\n    - key must be present and correspond to an existing increment policy key (\"FreeIncrement\", \"MinimalIncrement\")\n    - min must be present only if the increment policy key is \"MinimalIncrement\"\n- startingPrice is optional but must be a positive integer representing the starting price in cents if present\n- startDate is optional but must be a unix timestamp expressed in milliseconds if present\n- endDate is optional but must be a unix timestamp expressed in milliseconds if present\n\n## Success response\n\nIn order for the request to be successful, the :item field in the url must correspond to an already created option with a \"Planned\" state.\n\nIn which case the server will answer:\n\n- Code: 200 OK\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content: \n    ```\n    {\n    \t\"auctionState\": \"Opened\",\n    \t\"endDate\": 1553239508000,\n    \t\"bids\": [],\n    \t\"startingPrice\": 300,\n    \t\"incrementPolicy\": {\n    \t\t\"key\": \"FreeIncrement\"\n    \t},\n    \t\"startDate\": 1543239508000,\n    \t\"bidders\": [],\n    \t\"item\": \"test\"\n    }\n    ```\n    \n## Error responses\n\nIf the request is unsuccessful, the server may responds with the following errors:\n\n- Code: 400 BAD REQUEST\n- Headers:\n    ```\n    Content-type: text/plain; charset=UTF-8\n    ```\n- Content:\n    ```\n    The request content was malformed: [A descriptive message]\n    ```\n- When:\n    - The request was malformed\n    \nOR\n\n- Code: 404 NOT FOUND\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"The auction 'test2' doesn't exist\"\n    }\n    ```\n- When:\n    - The item parameter in route does not match an existing auction\n    \nOR\n\n- Code: 422 UNPROCESSABLE ENTITY\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"The provided starting price '-200' is negative\"\n    }\n    ```\n- When:\n    - The startingPrice parameter was negative\n    \nOR\n\n- Code: 423 LOCKED\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"The actual auction state 'Opened' doesn't allow this action\"\n    }\n    ```\n- When:\n    - The state of the auction is not \"Planned\"",
+			"method": "PATCH",
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n\t\"startingPrice\": 300,\n\t\"incrementPolicy\": {\n\t\t\"key\": \"FreeIncrement\"\n\t},\n\t\"startDate\": 1543239508000,\n\t\"endDate\": 1553239508000\n}"
+			},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Content-Type",
+					"value": "application/json",
+					"id": "pair_355a8633aed343278892a205b88b3fa6"
+				}
+			],
+			"authentication": {},
+			"metaSortKey": -1543239345036,
+			"settingStoreCookies": true,
+			"settingSendCookies": true,
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"_type": "request"
+		},
+		{
+			"_id": "req_6cafce57447144abb1c4fbe49cc8a4a1",
+			"parentId": "fld_dfba1a9be1334754838926992370dfd5",
+			"modified": 1543493968607,
+			"created": 1543239747906,
+			"url": "{{ baseUrl  }}/auctions",
+			"name": "Get the list of auctions",
+			"description": "## Description\n\nThis endpoint allow you to retrieve the list of auctions\n\n## Authentication\n\nNo authentication required\n\n## Path\n\nGET /auctions\n\n## Headers\n\nThis endpoint does not need any particular header\n\n## Url parameters\n\nThis endpoint does not accept url parameters.\n\n## Request body\n\nThis endpoint does not accept a body\n\n## Success response\n\nThe server will answer with a list of auction (empty if no auction exists on the server):\n\n- Code: 200 OK\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content: \n    ```\n    [\n    \t{\n    \t\t\"auctionState\": \"Opened\",\n    \t\t\"endDate\": 1553239508000,\n    \t\t\"bids\": [],\n    \t\t\"startingPrice\": 300,\n    \t\t\"incrementPolicy\": {\n    \t\t\t\"key\": \"FreeIncrement\"\n    \t\t},\n    \t\t\"startDate\": 1543239508000,\n    \t\t\"bidders\": [],\n    \t\t\"item\": \"test\"\n    \t}\n    ]\n    ```\n    \n## Error responses\n\nApart from unexpected errors, no error should be raised by this endpoint",
+			"method": "GET",
+			"body": {},
+			"parameters": [],
+			"headers": [],
+			"authentication": {},
+			"metaSortKey": -1543239345073.5,
+			"settingStoreCookies": true,
+			"settingSendCookies": true,
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"_type": "request"
+		},
+		{
+			"_id": "fld_98f19f650b52466e8b9bbc064178aa5f",
+			"parentId": "fld_cece69334fa54b589aa43bdd3de7d293",
+			"modified": 1543493764587,
+			"created": 1543239849748,
+			"name": "Bids",
+			"description": "",
+			"environment": {},
+			"metaSortKey": -1543239782386,
+			"_type": "request_group"
+		},
+		{
+			"_id": "req_1ebc2c868d044421ae33096afcab0440",
+			"parentId": "fld_cece69334fa54b589aa43bdd3de7d293",
+			"modified": 1543493946419,
+			"created": 1543239782336,
+			"url": "{{ baseUrl  }}/auctions/test/bidders",
+			"name": "Add a bidder to an auction",
+			"description": "## Description\n\nThis endpoint allow you to add a bidder to an auction\n\n## Authentication\n\nNo authentication required\n\n## Path\n\nPOST /auctions/:item/bidders\n\n## Headers\n\n```\nContent-type: application/json\n```\n\n## Url parameters\n\nThis endpoint does not accept url parameters.\n\n## Request body\n\nThis endpoint must have a well-formatted json body:\n```\n{\n\t\"bidderName\": \"testuser\"\n}\n```\n\n- bidderName must be present and must be a string, the bidderName provided should not have already been added to the auction\n\n## Success response\n\nIn order for the request to be successful, the :item field in the url must correspond to an already created option with an \"Opened\" state.\n\nIn which case the server will answer:\n\n- Code: 201 CREATED\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content: \n    ```\n    {\n    \t\"name\": \"testuser\"\n    }\n    ```\n    \n## Error responses\n\nIf the request is unsuccessful, the server may responds with the following errors:\n\n- Code: 400 BAD REQUEST\n- Headers:\n    ```\n    Content-type: text/plain; charset=UTF-8\n    ```\n- Content:\n    ```\n    The request content was malformed: [A descriptive message]\n    ```\n- When:\n    - The request was malformed\n    \nOR\n\n- Code: 404 NOT FOUND\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"The auction 'test2' doesn't exist\"\n    }\n    ```\n- When:\n    - The item parameter in route does not match an existing auction\n    \nOR\n\n- Code: 422 UNPROCESSABLE ENTITY LOCKED\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"'testuser' already joined this auction\"\n    }\n    ```\n- When:\n    - The bidderName parameter contained a bidder name already added to this auction\n    \nOR\n\n- Code: 423 LOCKED\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"The actual auction state 'Closed' doesn't allow this action\"\n    }\n    ```\n- When:\n    - The state of the auction is not \"Opened\"",
+			"method": "POST",
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n\t\"bidderName\": \"testuser\"\n}"
+			},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Content-Type",
+					"value": "application/json",
+					"id": "pair_dbceb24cd07d4bbf90fc64c689980e17"
+				}
+			],
+			"authentication": {},
+			"metaSortKey": -1543239782436,
+			"settingStoreCookies": true,
+			"settingSendCookies": true,
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"_type": "request"
+		},
+		{
+			"_id": "req_9351bdba9a07460aab0c800a5cccb5e5",
+			"parentId": "fld_98f19f650b52466e8b9bbc064178aa5f",
+			"modified": 1543493933999,
+			"created": 1543239857666,
+			"url": "{{ baseUrl  }}/auctions/test/bidders/testuser/bids",
+			"name": "Place a bid on an auction",
+			"description": "## Description\n\nThis endpoint allow you to place a bid on an auction\n\n## Authentication\n\nNo authentication required\n\n## Path\n\nPOST /auctions/:item/bidders/:bidderName/bid\n\n## Headers\n\n```\nContent-type: application/json\n```\n\n## Url parameters\n\nThis endpoint does not accept url parameters.\n\n## Request body\n\nThis endpoint must have a well-formatted json body:\n```\n{\n\t\"value\": 800\n}\n```\n\n- value must be present, must be an integer representing the bid price in cents and must be valid according to the current bid policy\n\n## Success response\n\nIn order for the request to be successful, the :item field in the url must correspond to an already created option with an \"Opened\" state and the :bidderName should correspond to the name of a bidder previously added to this auction\n\nIn which case the server will answer:\n\n- Code: 201 CREATED\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content: \n    ```\n    {\n    \t\"bidderName\": \"testuser\",\n    \t\"value\": 800\n    }\n    ```\n    \n## Error responses\n\nIf the request is unsuccessful, the server may responds with the following errors:\n\n- Code: 400 BAD REQUEST\n- Headers:\n    ```\n    Content-type: text/plain; charset=UTF-8\n    ```\n- Content:\n    ```\n    The request content was malformed: [A descriptive message]\n    ```\n- When:\n    - The request was malformed\n    \nOR\n\n- Code: 404 NOT FOUND\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"The auction 'test2' doesn't exist\"\n    }\n    ```\n- When:\n    - The item parameter in route does not match an existing auction\n    \nOR\n\n- Code: 404 NOT FOUND\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"'testuser2' hasn't joined this auction\"\n    }\n    ```\n- When:\n    - The provided bidderName does not match any user added to this auction\n    \nOR\n\n- Code: 422 UNPROCESSABLE ENTITY\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"The bid '100' is too low for this auction\"\n    }\n    ```\n- When:\n    - The provided bid value is too low according to the increment policy of the auction\n    \nOR\n\n- Code: 423 LOCKED\n- Headers:\n    ```\n    Content-type: application/json\n    ```\n- Content:\n    ```\n    {\n    \t\"message\": \"The actual auction state 'Closed' doesn't allow this action\"\n    }\n    ```\n- When:\n    - The state of the auction is not \"Opened\"",
+			"method": "POST",
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n\t\"value\": 100\n}"
+			},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Content-Type",
+					"value": "application/json",
+					"id": "pair_dc321bfd52264140866199f109c1a521"
+				}
+			],
+			"authentication": {},
+			"metaSortKey": -1543239857666,
+			"settingStoreCookies": true,
+			"settingSendCookies": true,
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"_type": "request"
+		}
+	]
+}

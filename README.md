@@ -83,7 +83,7 @@ The API does not include, at the moment:
 
 ### Insomnia
 
-If you want to try the API without having to type all the requests by hand, an [insomnia](https://insomnia.rest/) export file, containing all the endpoints of this API, can be downloaded [here](/insomnia.json).
+If you want to try the API without having to type all the requests by hand, an [insomnia](https://insomnia.rest/) export file, containing all the endpoints of this API and an integrated documentation for each of them, can be downloaded [here](/documentation/insomnia.json).
 
 - If you haven't insomnia installed on your computer, you can download it here: https://insomnia.rest/download
 - To import the data into insomnia, open the Application>Preference>Data menu, choose "Import Data"
@@ -102,7 +102,7 @@ You can also add/create a production environment if you decide to deploy the pro
 | Get the list of auctions | **[<code>GET</code> /auctions](/documentation/endpoints/auctions/GET_LIST.md)** |
 | Get an auction | **[<code>GET</code> /auctions/:item](/documentation/endpoints/auctions/GET.md)** |
 | Update an auction | **[<code>PATCH</code> /auctions/:item](/documentation/endpoints/auctions/PATCH.md)** |
-| Subscribe to an auction | **[<code>POST</code> /auctions/:item/bidders](/documentation/endpoints/auctions/bidders/POST.md)** |
+| Add a bidder to an auction | **[<code>POST</code> /auctions/:item/bidders](/documentation/endpoints/auctions/bidders/POST.md)** |
 | Place a bid on an auction | **[<code>POST</code> /auctions/:item/bidders/:bidderName/bids](/documentation/endpoints/auctions/bidders/bids/POST.md)** |
 
 ## Contributing
